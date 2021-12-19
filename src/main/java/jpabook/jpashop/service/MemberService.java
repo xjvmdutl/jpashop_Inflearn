@@ -70,4 +70,9 @@ public class MemberService {
         return memberRepository.findOne(memberId);
     }
 
+    @Transactional
+    public void update(Long id, String name) {
+        Member member = memberRepository.findOne(id);
+        member.setName(name); //영속상태에서 변경감지를 사용한다.
+    }
 }
