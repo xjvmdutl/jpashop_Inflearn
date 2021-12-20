@@ -3,6 +3,7 @@ package jpabook.jpashop.domain;
 
 
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -29,6 +30,7 @@ public class Member {
     //연관관계의 주인이 아니기 때문에 mappedBy로 주인이 아님의 표기
     //해당 값에 있는것이 바뀌더라도 주인이 아니기 때문에 Order가 변경되지 않는다
     @OneToMany(mappedBy = "member")
+    @JsonIgnore
     private List<Order> orders = new ArrayList<>();
 
 }
