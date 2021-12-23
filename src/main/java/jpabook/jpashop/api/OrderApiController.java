@@ -10,6 +10,8 @@ import jpabook.jpashop.repository.order.query.OrderFlatDto;
 import jpabook.jpashop.repository.order.query.OrderItemQueryDto;
 import jpabook.jpashop.repository.order.query.OrderQueryDto;
 import jpabook.jpashop.repository.order.query.OrderQueryRepository;
+import jpabook.jpashop.service.query.OrderDto;
+import jpabook.jpashop.service.query.OrderQueryService;
 import lombok.Data;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -29,11 +31,13 @@ import static java.util.stream.Collectors.*;
 public class OrderApiController {
     private final OrderRepository orderRepository;
     private final OrderQueryRepository orderQueryRepository;
+    private final OrderQueryService orderQueryService;
+
     @GetMapping("api/v1/orders")
     public List<Order> ordersV1(){
         List<Order> all = orderRepository.findAllByCriteria(new OrderSearch());
         for(Order order : all){
-            order.getMember().getName();
+            order.getMember().getName(); //지연로딩 발생
             order.getDelivery().getAddress();
             List<OrderItem> orderItems = order.getOrderItems();
             orderItems.stream().forEach(o->o.getItem().getName()); //강제 초기화를 해주었다. //프록시 객체는 보여주지 않기 때문에 강제로 프록시를 채워줌
@@ -52,14 +56,7 @@ public class OrderApiController {
 
     @GetMapping("api/v3/orders")
     public List<OrderDto> orderV3(){
-        List<Order> orders = orderRepository.findAllWithItem();
-        for(Order order : orders){
-            System.out.println("order ref = " + order + " id = " + order.getId());
-        }
-        List<OrderDto> collect = orders.stream()
-                .map(o -> new OrderDto(o))
-                .collect(toList());
-        return collect;
+        return orderQueryService.orderV3();
     }
     @GetMapping("api/v3.1/orders")
     public List<OrderDto> orderV3_page(
@@ -96,40 +93,5 @@ public class OrderApiController {
                 .collect(toList()); //메모리에서 모든 처리를 해준다.
     }
 
-    @Data
-    static class OrderDto{
-        private Long orderId;
-        private String name;
-        private LocalDateTime orderDate;
-        private OrderStatus orderStatus;
-        private Address address;
-        private List<OrderItemDto> orderItems; //DTO안에 앤티티를 넣으면 안된다.//앤티티의 의존성을 다 지워줘야 한다.
 
-
-        public OrderDto(Order order) {
-            this.orderId = order.getId();
-            this.name = order.getMember().getName();
-            this.orderDate = order.getOrderDate();
-            this.orderStatus = order.getStatus();
-            this.address = order.getDelivery().getAddress();
-            //프록시 초기화
-            //order.getOrderItems().stream().forEach(o -> o.getItem().getName());
-            this.orderItems = order.getOrderItems().stream()
-                                .map(orderItem -> new OrderItemDto(orderItem))
-                                .collect(toList());
-        }
-    }
-    @Data
-    static class OrderItemDto{
-
-        private String itemName; //상품 명
-        private int orderPrice;  //주문 가격
-        private int count;       //주문 수량
-
-        public OrderItemDto(OrderItem orderItem) {
-            this.itemName = orderItem.getItem().getName();
-            this.orderPrice = orderItem.getOrderPrice();
-            this.count = orderItem.getCount();
-        }
-    }
 }

@@ -2,6 +2,7 @@ package jpabook.jpashop.service;
 
 import jpabook.jpashop.domain.Member;
 import jpabook.jpashop.repository.MemberRepository;
+import jpabook.jpashop.repository.NewMemberRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -28,7 +29,7 @@ public class MemberService {
     }
     */
     //주입 방법 3 : 생성자 주입 , 한번 생성되면 바뀔일이 없기 때문에 생성자에서 생성하여 준다
-    private final MemberRepository memberRepository;//변경될 일이 없기 때문에 final로 해주어 컴파일시 에러를 잡는다.
+    private final NewMemberRepository memberRepository;//변경될 일이 없기 때문에 final로 해주어 컴파일시 에러를 잡는다.
 
     /*
     public MemberService(MemberRepository memberRepository){
@@ -67,12 +68,14 @@ public class MemberService {
     //한건만 조회
     @Transactional(readOnly = true)
     public Member findOne(Long memberId){
-        return memberRepository.findOne(memberId);
+        //return memberRepository.findOne(memberId);
+        return memberRepository.findById(memberId).get();
     }
 
     @Transactional
     public void update(Long id, String name) {
-        Member member = memberRepository.findOne(id);
+        //Member member = memberRepository.findOne(id);
+        Member member = memberRepository.findById(id).get();
         member.setName(name); //영속상태에서 변경감지를 사용한다.
     }
 }

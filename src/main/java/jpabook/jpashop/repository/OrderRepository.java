@@ -1,6 +1,12 @@
 package jpabook.jpashop.repository;
 
+import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.jpa.impl.JPAQueryFactory;
 import jpabook.jpashop.domain.Order;
+import jpabook.jpashop.domain.OrderStatus;
+
+import jpabook.jpashop.domain.QMember;
+import jpabook.jpashop.domain.QOrder;
 import jpabook.jpashop.repository.order.simplequery.OrderSimpleQueryDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
@@ -12,10 +18,16 @@ import javax.persistence.criteria.*;
 import java.util.ArrayList;
 import java.util.List;
 
+
 @Repository
-@RequiredArgsConstructor
 public class OrderRepository {
     private final EntityManager em;
+    private final JPAQueryFactory query;
+
+    public OrderRepository(EntityManager em, JPAQueryFactory query) {
+        this.em = em;
+        this.query = new JPAQueryFactory(em);
+    }
 
     public void save(Order order){
         em.persist(order);
@@ -24,8 +36,9 @@ public class OrderRepository {
     public Order findOne(Long id){
         return em.find(Order.class,id);
     }
-
+    /*
     public List<Order> findAll(OrderSearch orderSearch){
+     */
         //값이 있다면 쿼리는 이렇게 쓰면 되지만, 값이 없다면 문제가 된다.
         /*
         String jpql = "select o from Order o join o.member m" +
@@ -40,6 +53,7 @@ public class OrderRepository {
        */
         //방법 1 : jpql을 동적으로 빌드해서 만든다. 실무에서 사용하지 않는다.
         //        문자열을 더해서 하는것은 실수로 인한 버그가 발생할 상황이 많이 있다.
+    /*
         String jpql = "select o From Order o join o.member m";
         boolean isFirstCondition = true;
         //주문 상태 검색
@@ -73,7 +87,7 @@ public class OrderRepository {
         return query.getResultList();
 
     }
-
+    */
     /**
      *
      * JPA Criteria
@@ -102,6 +116,33 @@ public class OrderRepository {
         cq.where(criteria.toArray(new Predicate[criteria.size()]));
         TypedQuery<Order> query = em.createQuery(cq).setMaxResults(1000);
         return query.getResultList();
+    }
+    public List<Order> findAll(OrderSearch orderSearch){
+        QOrder order = QOrder.order;
+        QMember member = QMember.member;
+        //Q파일을 생성해 주어야한다.
+        //컴파일 시점에 오류를 다 잡아준다.
+        return query
+                .select(order)
+                .from(order)
+                .join(order.member,member)
+                .where(statusEq(orderSearch.getOrderStatus())//상태가 같으면, 실행시켜준다.
+                        , nameLike(orderSearch.getMemberName())) //이름값이 같다면 실행히켜준다,
+                .limit(1000)
+                .fetch();
+    }
+
+    private BooleanExpression nameLike(String memberName) {
+        if(StringUtils.hasText(memberName))
+            return null;
+        return QMember.member.name.like(memberName);
+    }
+
+    private BooleanExpression statusEq(OrderStatus statusCond){
+        if(statusCond == null){
+            return null;
+        }
+        return QOrder.order.status.eq(statusCond);
     }
 
     public List<Order> findAllWithMemberDelivery() {
@@ -136,4 +177,5 @@ public class OrderRepository {
                 .setMaxResults(limit)
                 .getResultList();
     }
+
 }
